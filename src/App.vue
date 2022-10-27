@@ -3,7 +3,14 @@
 <template>
   <router-view />
 </template>
-
+<script>
+import Cookie from "js-cookie";
+export default {
+  // beforeCreate() {
+  //   Cookie.remove("token");
+  // },
+};
+</script>
 <style>
 * {
   margin: 0;
