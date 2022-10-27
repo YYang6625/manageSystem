@@ -108,7 +108,7 @@ export default {
     // 刷新之后没有数据，登录前必定将数据存储到本地中l
     const asyncList = () => {
       if (transit.Menu.length === 0) {
-        return JSON.parse(sessionStorage.getItem("menu"));
+        return JSON.parse(localStorage.getItem("menu"));
       } else if (transit.Menu) {
         return transit.Menu;
       }

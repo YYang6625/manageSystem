@@ -1,6 +1,7 @@
 // 在main.js引入之后创建仓库即可
 import { nanoid } from "nanoid";
 import { defineStore } from "pinia";
+import Cookie from "js-cookie";
 
 // 暴露仓库
 export const useTransit = defineStore("transit", {
@@ -8,6 +9,8 @@ export const useTransit = defineStore("transit", {
     return {
       collapse: false,
       currentMenu: null,
+      totalHeight: 640,
+      height: 50,
       tabList: [
         {
           path: "/",
@@ -16,9 +19,9 @@ export const useTransit = defineStore("transit", {
           icon: "home",
         },
       ],
-      userList: [] || JSON.parse(sessionStorage.getItem("userList")),
+      userList: [] || JSON.parse(localStorage.getItem("userList")),
       // 用户menu
-      Menu: [] || JSON.parse(sessionStorage.getItem("menu")),
+      Menu: [] || JSON.parse(localStorage.getItem("menu")),
     };
   },
   actions: {
@@ -39,6 +42,7 @@ export const useTransit = defineStore("transit", {
         result == -1 ? this.tabList.push(value) : "";
       }
     },
+    // 关闭面包屑中的小tag
     closeTag(value) {
       // findInde会返回第一个符合数据的索引
       let index = this.tabList.findIndex((item) => item.name === value.name);
@@ -47,15 +51,17 @@ export const useTransit = defineStore("transit", {
     },
     // 接收用户数据,用于后续操作
     fetchUserData(users) {
+      console.log("fetchUserData");
       // 查看数据
       // console.log(users);
       // 将数据存储在浏览器
       this.userList = users;
-      sessionStorage.setItem("userList", JSON.stringify(users));
-      sessionStorage.setItem("userList", JSON.stringify(users));
+      localStorage.setItem("userList", JSON.stringify(users));
+      localStorage.setItem("userList", JSON.stringify(users));
     },
     // 添加用户信息(深拷贝防止之前提交的数据被修改)
     adduser(data) {
+      console.log("adduser");
       data.id = nanoid();
       data.name = data.name.trim();
       // console.log(data);
@@ -68,6 +74,7 @@ export const useTransit = defineStore("transit", {
     },
     // 删除用户数据
     removeUserData(id) {
+      console.log("removeUserData");
       // 1.利用forEach/map遍历后splice删除数据
       // this.userList.forEach((item, index, arr) => {
       //   if (item.id === id) {
@@ -83,13 +90,15 @@ export const useTransit = defineStore("transit", {
     },
     // 编辑用户
     EditUser(userData) {
-      console.log(userData);
+      console.log("EditUser");
       // 1.替换数据
       this.userList.forEach((item, index, arr) => {
         if (item.id === userData.id) {
           // forEach不会改变数组，需要利用参数手动将数组进行改变
           arr[index] = userData;
+          console.log(arr);
         }
+        localStorage.setItem("userList", JSON.stringify(arr));
       });
       // 2.也利用map生成一个新数组(由于vue的监听属性，会对每一刚刚属性进行监听进行包装，效率低)
       // 需要返回数据
@@ -104,13 +113,15 @@ export const useTransit = defineStore("transit", {
     },
     // 搜索用户
     selectUser(user) {
+      console.log("selectUser");
       user = user.trim();
       this.userList = this.userList.filter((item) => item.name === user);
     },
     // 存储用户的menu
     setMenu(value) {
+      console.log("setMenu");
       this.Menu = value;
-      sessionStorage.setItem("menu", JSON.stringify(value));
+      localStorage.setItem("menu", JSON.stringify(value));
     },
   },
 });

@@ -19,6 +19,7 @@
       title="新增用户"
       width="800px"
       :before-close="handleClose"
+      :v-if="dialogVisible"
     >
       <!-- 用户的表单信息(将原本的span内容换成form表单) -->
       <!-- element提供了表单验证功能，利用rules验证表单，并利用form表单提供的validate事件检测是否通过 -->
@@ -67,11 +68,12 @@
     <!-- 当设置了height时,超过高度会自动用滚动条显示 -->
     <!-- 利用组件自带的设置行内样式row-style进行设置行高 -->
     <el-table
+      ref="table"
       stripe
       :data="transit.userList"
       style="width: 100%"
-      height="80%"
-      :row-style="{ height: '50px' }"
+      :height="transit.totalHeight"
+      :row-style="{ height: transit.height + 'px' }"
     >
       <!-- label是表头展示 prop则是对应数据 需要和userList对应-->
       <el-table-column
@@ -83,7 +85,9 @@
       />
       <el-table-column fixed="right" label="操作" min-width="160">
         <template #default="scope">
-          <el-button size="small" @click="EditUser(scope.row)">编辑</el-button>
+          <el-button size="small" @click.stop="EditUser(scope.row)"
+            >编辑</el-button
+          >
           <el-button type="danger" size="small" @click="removeUser(scope.row)"
             >删除</el-button
           >
@@ -92,11 +96,15 @@
     </el-table>
     <!-- 由于没有数据,用蠢方法拷贝足够数据之后来替代total中的总数 -->
     <el-pagination
+      ref="page"
       small
       background
       layout="prev, pager, next"
-      :total="list.length"
+      :total="transit.userList.length"
       class="mt-4"
+      @prev-click="prevClick"
+      @next-click="nextClick"
+      @current-change="getPageNum"
     />
   </div>
 </template>
@@ -111,6 +119,7 @@ import {
 import { useTransit } from "../../store/index.js";
 export default defineComponent({
   setup() {
+    const currentPage = ref(null);
     // 引入仓库store
     const transit = useTransit();
     // 对话框先不显示(v-model控制显示传入值false)
@@ -233,6 +242,9 @@ export default defineComponent({
           }
           if (proxy.modelControl === 1) {
             transit.EditUser(proxy.formUser);
+            proxy.$refs.form.clearValidate();
+            console.log(proxy.$refs.form);
+            // location.reload();
           }
         }
       });
@@ -248,15 +260,16 @@ export default defineComponent({
     };
     // 新增前清空数据
     const handleOpen = () => {
+      proxy.modelControl = 0;
       // resetFields:将所有字段重置为初始值并移除校验结果
       // 先调用编辑回显再调用新增 this.$ref['form'] .resetFields()无法重置表单项
       // 原因:调用编辑的时候，表单的初始值被设置为回显(编辑显示)的值，每次重置时只是重置为初始值，不是空值。
       // 解决方案见编辑数据函数中
       proxy.dialogVisible = true;
       // 使初始值为空
-      // if (proxy.$refs.form !== undefined) {
-      proxy.$refs.form.resetFields();
-      // }
+      if (proxy.$refs.form !== undefined) {
+        proxy.$refs.form.resetFields();
+      }
     };
     // 取消按键由于不能触发before-close事件需要单独添加触发事件
     const cancel = () => {
@@ -277,17 +290,30 @@ export default defineComponent({
       proxy.dialogVisible = true;
       // 将点击的数据赋给表单(直接赋值，form初始值就变成此赋值，因为dialog和赋值时同步的)
       // 将赋值操作之后，这样的话userData也就不是赋值为初始值，而是修改后的值
-      // proxy.$nextTick(() => {
-      // 直接赋值并不会显示数据，因为是在下一次DOM更新之后才会显示
-      // proxy.formUser = userData;
-      // 所以此时我们需要深拷贝创建一个新的值使其进行刷新，并且这样userData也不再是初始值
-      // 这里对对象进行了修改所以会触发es6的set函数从而导致DOM更新而显示数据，上面写法并不会
-      Object.assign(proxy.formUser, userData);
-      // });
+      proxy.$nextTick(() => {
+        // 直接赋值并不会显示数据，因为是在下一次DOM更新之后才会显示
+        // proxy.formUser = userData;
+        // 所以此时我们需要深拷贝创建一个新的值使其进行刷新，并且这样userData也不再是初始值
+        // 这里对对象进行了修改所以会触发es6的set函数从而导致DOM更新而显示数据，上面写法并不会
+        Object.assign(proxy.formUser, userData);
+      });
     };
     // 搜索用户
     const onSubmit = (user) => {
       transit.selectUser(user);
+    };
+    // 上一页
+    const prevClick = () => {
+      proxy.$refs.table.setScrollTop(transit.height * 12 * currentPage.value);
+    };
+    // 下一页
+    const nextClick = () => {
+      proxy.$refs.table.setScrollTop(transit.height * 12 * currentPage.value);
+    };
+    // 页面发生改变就触发默认参数为currentPage当前页(改变之后的)
+    const getPageNum = (val) => {
+      currentPage.value = val - 1;
+      proxy.$refs.table.setScrollTop(transit.height * 12 * currentPage.value);
     };
     return {
       getUserData,
@@ -298,6 +324,9 @@ export default defineComponent({
       removeUser,
       EditUser,
       onSubmit,
+      prevClick,
+      nextClick,
+      getPageNum,
       selectUser,
       list,
       tableLabel,
